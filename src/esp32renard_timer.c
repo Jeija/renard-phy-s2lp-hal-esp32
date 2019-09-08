@@ -5,7 +5,7 @@ static uint64_t target_rtc_count = 0;
 
 void esp32renard_timer_start(uint32_t milliseconds)
 {
-	target_rtc_count = rtc_time_get() + milliseconds * rtc_clk_slow_freq_get_hz() / 1000;
+	target_rtc_count = rtc_time_get() + (uint64_t)milliseconds * rtc_clk_slow_freq_get_hz() / 1000;
 }
 
 void esp32renard_timer_stop(void)
