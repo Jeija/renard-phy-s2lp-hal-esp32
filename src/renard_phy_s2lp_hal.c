@@ -44,9 +44,8 @@ int renard_phy_s2lp_hal_interrupt_wait(void)
 
 	esp_light_sleep_start();
 
-	int cause = esp_sleep_get_wakeup_cause();
-	if (cause == ESP_SLEEP_WAKEUP_TIMER)
-		esp32renard_timer_stop();
-	return cause == ESP_SLEEP_WAKEUP_GPIO ? true : false;
+	esp32renard_timer_stop();
+
+	return esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO ? true : false;
 }
 
