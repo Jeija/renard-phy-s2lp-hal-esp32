@@ -1,5 +1,6 @@
 #include "esp_sleep.h"
 
+#include "esp32renard_gpio_timeout.h"
 #include "esp32renard_shutdown.h"
 #include "esp32renard_timer.h"
 #include "esp32renard_gpio.h"
@@ -9,6 +10,16 @@ void renard_phy_s2lp_hal_init(void)
 {
 	esp32renard_shutdown_init();
 	esp32renard_spi_init();
+}
+
+/*
+ * renard_phy_s2lp_hal_add_timeout_source (platform-specific!) can be used to add GPIO pins as timeout sources when in
+ * light-sleep mode, e.g. during a transmission or while waiting for a downlink. Only up to 5 additional timeout
+ * sources are permitted.
+ */
+void renard_phy_s2lp_hal_add_timeout_source(gpio_num_t gpio, gpio_int_type_t type)
+{
+	esp32renard_gpio_timeout_add(gpio, type);
 }
 
 void renard_phy_s2lp_hal_spi(uint8_t length, uint8_t *in, uint8_t *out)
@@ -37,6 +48,10 @@ void renard_phy_s2lp_hal_interrupt_clear(void)
 	esp32renard_gpio_interrupt_disable();
 }
 
+/*
+ * renard_phy_s2lp_hal_interrupt_wait
+ * returns false for timeout and true if S2-LP GPIO pin caused interrupt
+ */
 int renard_phy_s2lp_hal_interrupt_wait(void)
 {
 	esp32renard_timer_continue();
@@ -46,6 +61,9 @@ int renard_phy_s2lp_hal_interrupt_wait(void)
 
 	esp32renard_timer_stop();
 
-	return esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO ? true : false;
+	if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO)
+		return !esp32renard_gpio_timeout_occurred();
+
+	return false;
 }
 
