@@ -27,6 +27,8 @@ void esp32renard_gpio_interrupt_continue(void)
 	if (gpio_interrupt_enable) {
 		gpio_wakeup_enable(CONFIG_RENARD_S2LP_INT_GPIO,
 				gpio_interrupt_rising ? GPIO_INTR_HIGH_LEVEL : GPIO_INTR_LOW_LEVEL);
+	} else {
+		gpio_wakeup_disable(CONFIG_RENARD_S2LP_INT_GPIO);
 	}
 
 	if (have_gpio_timeout || gpio_interrupt_enable)
