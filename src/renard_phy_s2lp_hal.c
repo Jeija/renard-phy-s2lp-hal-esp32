@@ -1,5 +1,8 @@
 #include "esp_sleep.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include "esp32renard_gpio_timeout.h"
 #include "esp32renard_shutdown.h"
 #include "esp32renard_timer.h"
@@ -54,6 +57,17 @@ void renard_phy_s2lp_hal_interrupt_clear(void)
  */
 int renard_phy_s2lp_hal_interrupt_wait(void)
 {
+	if (!esp32renard_gpio_interrupt_uses_sleep_wakeup()) {
+		uint32_t remaining_ms = esp32renard_timer_remaining_ms();
+
+		if (remaining_ms > 0) {
+			TickType_t ticks = pdMS_TO_TICKS(remaining_ms);
+			vTaskDelay(ticks > 0 ? ticks : 1);
+		}
+		esp32renard_timer_stop();
+		return false;
+	}
+
 	esp32renard_timer_continue();
 	esp32renard_gpio_interrupt_continue();
 
@@ -66,4 +80,3 @@ int renard_phy_s2lp_hal_interrupt_wait(void)
 
 	return false;
 }
-

@@ -34,3 +34,8 @@ void esp32renard_gpio_interrupt_continue(void)
 	if (have_gpio_timeout || gpio_interrupt_enable)
 		esp_sleep_enable_gpio_wakeup();
 }
+
+bool esp32renard_gpio_interrupt_uses_sleep_wakeup(void)
+{
+	return gpio_interrupt_enable;
+}

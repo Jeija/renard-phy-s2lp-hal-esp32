@@ -18,6 +18,11 @@ void esp32renard_gpio_timeout_add(gpio_num_t gpio, gpio_int_type_t type)
 	}
 }
 
+bool esp32renard_gpio_timeout_has_sources(void)
+{
+	return timeout_source_count > 0;
+}
+
 bool esp32renard_gpio_timeout_continue(void)
 {
 	for (size_t i = 0; i < timeout_source_count; ++i)

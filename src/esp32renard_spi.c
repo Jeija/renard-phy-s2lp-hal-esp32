@@ -14,7 +14,7 @@ void esp32renard_spi_init(void)
 		.quadhd_io_num = -1,
 		.max_transfer_sz = 100
 	};
-	ESP_ERROR_CHECK(spi_bus_initialize(VSPI_HOST, &buscfg, 1));
+	ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
 	spi_device_interface_config_t devcfg = {
 		.command_bits = 0,
@@ -24,7 +24,7 @@ void esp32renard_spi_init(void)
 		.spics_io_num = CONFIG_RENARD_S2LP_CS_GPIO,
 		.queue_size = 1
 	};
-	ESP_ERROR_CHECK(spi_bus_add_device(VSPI_HOST, &devcfg, &s2lp));
+	ESP_ERROR_CHECK(spi_bus_add_device(SPI3_HOST, &devcfg, &s2lp));
 }
 
 void esp32renard_spi_raw(uint8_t length, uint8_t *in, uint8_t *out)
@@ -37,4 +37,3 @@ void esp32renard_spi_raw(uint8_t length, uint8_t *in, uint8_t *out)
 
 	ESP_ERROR_CHECK(spi_device_transmit(s2lp, &t));
 }
-

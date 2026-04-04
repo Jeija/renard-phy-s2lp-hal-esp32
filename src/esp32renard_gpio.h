@@ -4,5 +4,6 @@
 void esp32renard_gpio_interrupt_enable(bool rising);
 void esp32renard_gpio_interrupt_disable(void);
 void esp32renard_gpio_interrupt_continue(void);
+bool esp32renard_gpio_interrupt_uses_sleep_wakeup(void);
 
 #endif
