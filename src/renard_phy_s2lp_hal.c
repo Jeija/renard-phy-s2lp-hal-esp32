@@ -9,6 +9,8 @@
 #include "esp32renard_gpio.h"
 #include "esp32renard_spi.h"
 
+#define LONG_LIGHT_SLEEP_THRESHOLD_MS 1000
+
 void renard_phy_s2lp_hal_init(void)
 {
 	esp32renard_shutdown_init();
@@ -55,10 +57,20 @@ void renard_phy_s2lp_hal_interrupt_clear(void)
  * renard_phy_s2lp_hal_interrupt_wait
  * returns false for timeout and true if S2-LP GPIO pin caused interrupt
  */
-int renard_phy_s2lp_hal_interrupt_wait(void)
+bool renard_phy_s2lp_hal_interrupt_wait(void)
 {
 	if (!esp32renard_gpio_interrupt_uses_sleep_wakeup()) {
 		uint32_t remaining_ms = esp32renard_timer_remaining_ms();
+
+		if (esp32renard_gpio_timeout_has_sources() && remaining_ms >= LONG_LIGHT_SLEEP_THRESHOLD_MS) {
+			esp32renard_timer_continue();
+			esp32renard_gpio_interrupt_continue();
+
+			esp_light_sleep_start();
+
+			esp32renard_timer_stop();
+			return false;
+		}
 
 		if (remaining_ms > 0) {
 			TickType_t ticks = pdMS_TO_TICKS(remaining_ms);
