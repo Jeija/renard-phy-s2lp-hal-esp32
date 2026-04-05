@@ -1,3 +1,5 @@
+#include <setjmp.h>
+
 #include "esp_sleep.h"
 
 #include "freertos/FreeRTOS.h"
@@ -8,8 +10,21 @@
 #include "esp32renard_timer.h"
 #include "esp32renard_gpio.h"
 #include "esp32renard_spi.h"
+#include "renard_phy_s2lp_hal_platform.h"
 
 #define LONG_LIGHT_SLEEP_THRESHOLD_MS 1000
+
+static jmp_buf *renard_abort_env;
+
+static void renard_phy_s2lp_hal_abort_now(void)
+{
+	esp32renard_timer_stop();
+	esp32renard_gpio_interrupt_disable();
+	esp32renard_shutdown_set(true);
+
+	if (renard_abort_env != NULL)
+		longjmp(*renard_abort_env, 1);
+}
 
 void renard_phy_s2lp_hal_init(void)
 {
@@ -25,6 +40,16 @@ void renard_phy_s2lp_hal_init(void)
 void renard_phy_s2lp_hal_add_timeout_source(gpio_num_t gpio, gpio_int_type_t type)
 {
 	esp32renard_gpio_timeout_add(gpio, type);
+}
+
+void renard_phy_s2lp_hal_abort_arm(jmp_buf *abort_env)
+{
+	renard_abort_env = abort_env;
+}
+
+void renard_phy_s2lp_hal_abort_disarm(void)
+{
+	renard_abort_env = NULL;
 }
 
 void renard_phy_s2lp_hal_spi(uint8_t length, uint8_t *in, uint8_t *out)
@@ -69,6 +94,10 @@ bool renard_phy_s2lp_hal_interrupt_wait(void)
 			esp_light_sleep_start();
 
 			esp32renard_timer_stop();
+
+			if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO && esp32renard_gpio_timeout_occurred())
+				renard_phy_s2lp_hal_abort_now();
+
 			return false;
 		}
 
@@ -87,8 +116,12 @@ bool renard_phy_s2lp_hal_interrupt_wait(void)
 
 	esp32renard_timer_stop();
 
-	if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO)
+	if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO) {
+		if (esp32renard_gpio_timeout_occurred())
+			renard_phy_s2lp_hal_abort_now();
+
 		return !esp32renard_gpio_timeout_occurred();
+	}
 
 	return false;
 }
